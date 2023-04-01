@@ -2,8 +2,9 @@ import Joi from "joi";
 import CustomErrorHandler from "../Services/CustomErrorHandler.js";
 import User from "../Models/User.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import JwtService from "../Services/JwtServices.js";
+import { REF_SECRET } from "../config/index.js";
+import RefreshToken from "../Models/RefreshToken.js";
 export const register = async (req, res, next) => {
   //validation
   const registerSchema = Joi.object({
@@ -34,6 +35,7 @@ export const register = async (req, res, next) => {
   const hashPassword = await bcrypt.hash(password, 10);
 
   let access_token;
+  let refresh_token;
   try {
     const data = new User({
       name,
@@ -41,7 +43,7 @@ export const register = async (req, res, next) => {
       password: hashPassword,
       role,
     });
-    const date = await data.save();
+    await data.save();
 
     //token generation
     const payload = {
@@ -49,10 +51,18 @@ export const register = async (req, res, next) => {
       role: data.role,
     };
     access_token = JwtService.sign(payload);
+    refresh_token = JwtService.sign(payload,"1y",REF_SECRET);
+    //database whiteList
+    const refToken=new RefreshToken({
+      token:refresh_token,
+    });
+    await refToken.save();
   } catch (error) {
     return next(error);
   }
   res.status(200).json({
     message: "Data recevied",
+    access_token,
+    refresh_token
   });
 };
