@@ -48,3 +48,12 @@ export const Login = async (req, res, next) => {
     return next(error);
   }
 };
+
+export const logout = async (req, res, next) => {
+  try {
+    await RefreshToken.deleteOne({ token: req.body.refresh_token });
+  } catch (error) {
+    return next(new Error("Something went wrong!!"));
+  }
+  res.status(200).json({ msg: "deleted" })
+}
